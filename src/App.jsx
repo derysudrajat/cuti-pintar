@@ -73,9 +73,11 @@ const getSafeDate = (dateStr) => {
     return new Date(year, month - 1, day);
 };
 
-const formatDateShort = (date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
-const formatDateFull = (dateStr) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(getSafeDate(dateStr));
-const formatDateMonthOnly = (dateStr) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(getSafeDate(dateStr));
+// UPDATED: Menambahkan nama hari (weekday) ke dalam formatter
+const getDayName = (date) => new Intl.DateTimeFormat('id-ID', { weekday: 'long' }).format(date);
+const formatDateShort = (date) => new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }).format(date);
+const formatDateFull = (dateStr) => new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(getSafeDate(dateStr));
+const formatDateMonthOnly = (dateStr) => new Intl.DateTimeFormat('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }).format(getSafeDate(dateStr));
 
 const addToGoogleCalendar = (combo) => {
     const startDate = formatDateYMD(combo.startDate);
@@ -223,8 +225,16 @@ const Timeline = ({ days }) => {
           glow = "ring-2 ring-emerald-100 ring-offset-1";
         }
 
+        // FORMAT HARI (ex: Sen, Sel)
+        const dayName = new Intl.DateTimeFormat('id-ID', { weekday: 'short' }).format(day.dateObj);
+
         return (
-          <div key={idx} className="flex flex-col items-center gap-1.5 min-w-[28px] group">
+          <div key={idx} className="flex flex-col items-center gap-1 min-w-[30px] group">
+             {/* NAMA HARI DITAMBAHKAN DI SINI */}
+             <span className="text-[9px] font-medium text-slate-400 uppercase tracking-tight">
+               {dayName}
+             </span>
+
              <span className={`text-[10px] font-medium font-mono ${day.type === 'leave' ? 'text-emerald-600 font-bold' : 'text-gray-400'}`}>
                {day.dateObj.getDate()}
              </span>
@@ -810,7 +820,10 @@ export default function App() {
                                             <span className="text-[9px] uppercase font-medium">{new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(getSafeDate(h.date))}</span>
                                         </div>
                                         <div className="flex-1">
-                                            <p className="text-xs font-medium text-slate-700 leading-tight group-hover:text-emerald-600 transition-colors">{h.name}</p>
+                                            <div className="flex justify-between items-start">
+                                                <p className="text-xs font-medium text-slate-700 leading-tight group-hover:text-emerald-600 transition-colors">{h.name}</p>
+                                                <span className="text-[10px] text-slate-400 shrink-0 ml-2">{getDayName(getSafeDate(h.date))}</span>
+                                            </div>
                                             <span className={`text-[9px] px-1.5 py-0.5 rounded-full inline-block mt-1 ${h.type === 'joint' ? 'bg-purple-100 text-purple-700' : 'bg-rose-100 text-rose-700'}`}>
                                                 {h.type === 'joint' ? 'Cuti Bersama' : 'Nasional'}
                                             </span>
