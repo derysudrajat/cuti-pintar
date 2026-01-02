@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Calendar, Coffee, Info, Star, Filter, Search, HelpCircle, ArrowUpDown, Palmtree, ChevronRight, Settings, Briefcase, Frown, Smile, MessageSquareQuote, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Calendar, Coffee, Info, Star, Filter, Search, HelpCircle, ArrowUpDown, Palmtree, ChevronRight, Settings, Briefcase, Frown, Smile, MessageSquareQuote, ToggleLeft, ToggleRight, CalendarPlus, Download, List } from 'lucide-react';
 
 // --- DATA LIBUR NASIONAL & CUTI BERSAMA (UPDATED SKB 3 MENTERI & BI PREDICTION) ---
 const HOLIDAYS_DATA = {
@@ -33,13 +33,12 @@ const HOLIDAYS_DATA = {
     { date: '2025-12-26', name: 'Cuti Bersama Hari Raya Natal', type: 'joint' },
   ],
   2026: [
-    // PREDIKSI 2026 (Based on standard pattern: Thursday Holiday -> Friday Cuti Bersama)
     { date: '2026-01-01', name: 'Tahun Baru 2026 Masehi', type: 'national' },
-    { date: '2026-01-02', name: 'Cuti Bersama Tahun Baru (Prediksi)', type: 'joint' }, // Harpitnas Classic
+    { date: '2026-01-02', name: 'Cuti Bersama Tahun Baru (Prediksi)', type: 'joint' },
     { date: '2026-02-16', name: 'Isra Mikraj (Prediksi)', type: 'national' },
     { date: '2026-02-17', name: 'Tahun Baru Imlek 2577 Kongzili', type: 'national' },
     { date: '2026-03-19', name: 'Hari Suci Nyepi', type: 'national' },
-    { date: '2026-03-20', name: 'Idul Fitri 1447 H (Hari 1) & Cuti Nyepi', type: 'national' }, // Collision!
+    { date: '2026-03-20', name: 'Idul Fitri 1447 H (Hari 1) & Cuti Nyepi', type: 'national' },
     { date: '2026-03-21', name: 'Idul Fitri 1447 H (Hari 2)', type: 'national' },
     { date: '2026-03-23', name: 'Cuti Bersama Idul Fitri', type: 'joint' },
     { date: '2026-03-24', name: 'Cuti Bersama Idul Fitri', type: 'joint' },
@@ -48,7 +47,7 @@ const HOLIDAYS_DATA = {
     { date: '2026-04-03', name: 'Wafat Yesus Kristus', type: 'national' },
     { date: '2026-05-01', name: 'Hari Buruh Internasional', type: 'national' },
     { date: '2026-05-14', name: 'Kenaikan Yesus Kristus', type: 'national' },
-    { date: '2026-05-15', name: 'Cuti Bersama Kenaikan (Prediksi)', type: 'joint' }, // Harpitnas Classic
+    { date: '2026-05-15', name: 'Cuti Bersama Kenaikan (Prediksi)', type: 'joint' },
     { date: '2026-05-27', name: 'Idul Adha 1447 Hijriah', type: 'national' },
     { date: '2026-05-28', name: 'Cuti Bersama Idul Adha (Prediksi)', type: 'joint' },
     { date: '2026-06-01', name: 'Hari Lahir Pancasila', type: 'national' },
@@ -60,7 +59,67 @@ const HOLIDAYS_DATA = {
   ]
 };
 
-// --- COPYWRITING GENERATOR ---
+// --- UTILS ---
+const formatDateYMD = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
+};
+
+// HELPER BARU: Memastikan string tanggal 'YYYY-MM-DD' dibaca sebagai waktu lokal
+const getSafeDate = (dateStr) => {
+    const [year, month, day] = dateStr.split('-').map(Number);
+    return new Date(year, month - 1, day);
+};
+
+const formatDateShort = (date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
+const formatDateFull = (dateStr) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(getSafeDate(dateStr));
+const formatDateMonthOnly = (dateStr) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(getSafeDate(dateStr));
+
+const addToGoogleCalendar = (combo) => {
+    const startDate = formatDateYMD(combo.startDate);
+    const endDateObj = new Date(combo.endDate);
+    endDateObj.setDate(endDateObj.getDate() + 1);
+    const endDate = formatDateYMD(endDateObj);
+    
+    const title = encodeURIComponent("Cuti Healing ✨");
+    const details = encodeURIComponent(`Alasan: ${combo.reason}\n\nRekomendasi dari CutiPintar. \nTotal Libur: ${combo.days.length} Hari.`);
+    
+    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}`, '_blank');
+};
+
+const downloadICS = (combo) => {
+    const startDate = formatDateYMD(combo.startDate);
+    const endDateObj = new Date(combo.endDate);
+    endDateObj.setDate(endDateObj.getDate() + 1);
+    const endDate = formatDateYMD(endDateObj);
+
+    const title = "Cuti Healing ✨";
+    const description = `Alasan: ${combo.reason}. Rekomendasi dari CutiPintar.`;
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'BEGIN:VEVENT',
+      `DTSTART;VALUE=DATE:${startDate}`,
+      `DTEND;VALUE=DATE:${endDate}`,
+      `SUMMARY:${title}`,
+      `DESCRIPTION:${description}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = window.URL.createObjectURL(blob);
+    link.setAttribute('download', `cutipintar-${startDate}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
+// --- COPYWRITING ---
 const getWittyReason = (monthIndex, type, totalDays) => {
     const reasons = [
         "Kerja terus, kaya kagak, tipes iya.",
@@ -107,15 +166,12 @@ const getWittyReason = (monthIndex, type, totalDays) => {
     return specificReasons[monthIndex] || reasons[Math.floor(Math.random() * reasons.length)];
 };
 
-
 // --- HELPER FUNCTIONS ---
-
 const getMonthName = (date) => new Intl.DateTimeFormat('id-ID', { month: 'long' }).format(date);
 const getMonthNameByIndex = (index) => {
     const date = new Date(2025, index, 1);
     return new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(date);
 };
-const formatDateShort = (date) => new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short' }).format(date);
 
 const isWeekend = (date) => {
   const day = date.getDay();
@@ -127,7 +183,6 @@ const getHoliday = (dateStr, year) => {
 };
 
 // --- COMPONENTS ---
-
 const Badge = ({ children, color = "blue" }) => {
   const colors = {
     blue: "bg-blue-50 text-blue-700 ring-1 ring-blue-600/20",
@@ -261,14 +316,37 @@ const RecommendationCard = ({ combo }) => {
 
       <Timeline days={combo.days} />
       
+      {/* Calendar Actions */}
+      <div className="mt-5 pt-4 border-t border-gray-100 flex flex-wrap gap-2 justify-end">
+          <button 
+            onClick={() => addToGoogleCalendar(combo)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-semibold transition-colors border border-blue-100"
+          >
+            <CalendarPlus size={14} />
+            Google Cal
+          </button>
+          <button 
+            onClick={() => downloadICS(combo)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold transition-colors border border-gray-200"
+          >
+            <Download size={14} />
+            Apple/Outlook (.ics)
+          </button>
+      </div>
+
       {combo.holidaysInvolved.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-gray-50 flex flex-wrap gap-2">
-          {combo.holidaysInvolved.map((h, i) => (
-             <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-50 border border-rose-100 text-[10px] font-medium text-rose-600">
-               <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
-               {h}
-             </span>
-          ))}
+        <div className="mt-4 flex flex-wrap gap-2">
+          {combo.holidaysInvolved.map((h, i) => {
+             // CONDITIONAL STYLING: Check if it's 'joint_leave' (Cuti Bersama) or 'holiday' (Nasional)
+             const isJoint = h.type === 'joint_leave';
+             return (
+                <span key={i} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-medium ${isJoint ? 'bg-purple-50 border-purple-100 text-purple-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isJoint ? 'bg-purple-400' : 'bg-rose-400'}`}></span>
+                {/* SHOWING DATE HERE */}
+                {h.name} <span className={`${isJoint ? 'text-purple-400' : 'text-rose-400'} font-normal ml-0.5`}>({formatDateMonthOnly(h.date)})</span>
+                </span>
+             );
+          })}
         </div>
       )}
     </div>
@@ -281,10 +359,22 @@ export default function App() {
   const [startMonth, setStartMonth] = useState(0); // Jan
   const [endMonth, setEndMonth] = useState(11); // Dec
   const [maxLeavePerTrip, setMaxLeavePerTrip] = useState(2);
-  const [includeJointLeave, setIncludeJointLeave] = useState(true); // NEW: Toggle Cuti Bersama 
+  const [includeJointLeave, setIncludeJointLeave] = useState(true); 
   const [recommendations, setRecommendations] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [sortBy, setSortBy] = useState('efficiency');
+
+  // --- MEMOIZED HOLIDAY LIST ---
+  const holidayList = useMemo(() => {
+    const data = HOLIDAYS_DATA[year] || [];
+    return data.filter(h => {
+        // Optional: Filter by selected range if desired, or show all for context
+        // Showing only selected range for now to match user focus
+        const d = getSafeDate(h.date); // Use safe date
+        const m = d.getMonth();
+        return m >= startMonth && m <= endMonth;
+    });
+  }, [year, startMonth, endMonth]);
 
   // --- ENGINE LOGIC ---
   const calculateRecommendations = () => {
@@ -298,7 +388,12 @@ export default function App() {
         const yearMap = [];
 
         while (current <= endDate) {
-        const dateStr = current.toISOString().split('T')[0];
+        // FIX: Use local components instead of toISOString() to avoid timezone shift
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, '0');
+        const d = String(current.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${d}`;
+        
         const holidayData = getHoliday(dateStr, year);
         const weekend = isWeekend(current);
         
@@ -314,7 +409,6 @@ export default function App() {
                     type = 'weekend';
                 } else {
                     type = 'work';
-                    // Optional: note = holidayData.name + " (Masuk)";
                 }
             } else {
                 type = holidayData.type === 'joint' ? 'joint_leave' : 'holiday';
@@ -386,7 +480,21 @@ export default function App() {
 
                 const startDate = days[0].dateObj;
                 const endDate = days[days.length-1].dateObj;
-                const holidaysInvolved = [...new Set(days.filter(d => d.holidayName).map(d => d.holidayName))];
+                
+                // Collect holidays with dates for the pills
+                // IMPORTANT: INCLUDE TYPE 'type'
+                const holidaysInvolved = days
+                    .filter(d => d.isHoliday || d.isJointLeave)
+                    .map(d => ({ name: d.holidayName, date: d.dateStr, type: d.type })); // Add type here!
+                
+                const uniqueHolidaysInvolved = [];
+                const seenDates = new Set();
+                holidaysInvolved.forEach(h => {
+                    if(!seenDates.has(h.date)) {
+                        seenDates.add(h.date);
+                        uniqueHolidaysInvolved.push(h);
+                    }
+                });
 
                 results.push({
                     id: `${startDate.getTime()}-${endDate.getTime()}`,
@@ -394,7 +502,7 @@ export default function App() {
                     endDate,
                     days,
                     leaveCount: usedLeave,
-                    holidaysInvolved,
+                    holidaysInvolved: uniqueHolidaysInvolved,
                     type: 'standard',
                     reason: getWittyReason(startDate.getMonth(), 'standard', days.length)
                 });
@@ -403,9 +511,7 @@ export default function App() {
 
         // 2. WEEKEND WARRIOR SCAN
         for (let m = 0; m < 12; m++) {
-            // Check if month is within selected range
             if (m < startMonth || m > endMonth) continue;
-            
             if (maxLeavePerTrip < 1 || leaveQuota < 1) continue;
 
             const workFridays = yearMap.filter(d => 
@@ -491,7 +597,6 @@ export default function App() {
             }
         });
         
-        // Final Filter: Range Check
         const finalResults = uniqueResults.filter(r => {
              const m = r.startDate.getMonth();
              return m >= startMonth && m <= endMonth;
@@ -684,6 +789,39 @@ export default function App() {
                     </div>
                 </div>
                 
+                {/* NEW: Holiday List Card */}
+                <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm overflow-hidden flex flex-col max-h-[400px]">
+                    <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold text-sm tracking-wide border-b border-gray-50 pb-3 flex-shrink-0">
+                        <List size={16} className="text-emerald-500" />
+                        <h3 className="uppercase">Daftar Libur ({getMonthNameByIndex(startMonth)} - {getMonthNameByIndex(endMonth)})</h3>
+                    </div>
+                    
+                    <div className="overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+                        {holidayList.length === 0 ? (
+                            <div className="text-center py-8 text-slate-400 text-xs">
+                                Tidak ada hari libur di rentang bulan ini.
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {holidayList.map((h, idx) => (
+                                    <div key={idx} className="flex gap-3 items-start group">
+                                        <div className={`flex flex-col items-center justify-center w-10 h-10 rounded-lg flex-shrink-0 border ${h.type === 'joint' ? 'bg-purple-50 border-purple-100 text-purple-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+                                            <span className="text-xs font-bold">{getSafeDate(h.date).getDate()}</span>
+                                            <span className="text-[9px] uppercase font-medium">{new Intl.DateTimeFormat('id-ID', { month: 'short' }).format(getSafeDate(h.date))}</span>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs font-medium text-slate-700 leading-tight group-hover:text-emerald-600 transition-colors">{h.name}</p>
+                                            <span className={`text-[9px] px-1.5 py-0.5 rounded-full inline-block mt-1 ${h.type === 'joint' ? 'bg-purple-100 text-purple-700' : 'bg-rose-100 text-rose-700'}`}>
+                                                {h.type === 'joint' ? 'Cuti Bersama' : 'Nasional'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 {/* Legend Card */}
                 <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
                     <div className="flex items-center gap-2 mb-4 text-slate-800 font-bold text-sm tracking-wide">
